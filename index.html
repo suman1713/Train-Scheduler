@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDM</title>
+    <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/Highlight-Phone.css">
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <script src="https://www.gstatic.com/firebasejs/4.2.0/firebase.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/2.12.0/moment.min.js"></script>
+
+</head>
+
+<body>
+    <div class="highlight-phone">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-8">
+                    <div class="intro">
+                        <h2>Time Your Train</h2>Choo..choo...chooo</h3>
+                        <p> </p>
+                    </div>
+                </div>
+                <div class="col-sm-4 hidden-xs">
+                    <div class="iphone-mockup"><img src="assets/img/iphone.svg" class="device">
+                        <div class="screen"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row" style="margin:30px;">
+        <div class="col-md-10 col-md-offset-1">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Your Train Time Table:</h3></div>
+                <div class="panel-body">
+                     <table class="table table-hover" id='train-table'>
+                <thead>
+                  <tr>
+                    <th>Train Name</th>
+                    <th>Destination</th>
+                    <th>Frequency(min)</th>
+                    <th>Next Arrival</th>
+                    <th>Minutes Away</th>
+                    
+                  </tr>
+                    
+                                    </thead>
+                <tbody>
+                <div id="table-data"></div>
+                </tbody>
+              </table>
+              <div id="display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-10 col-md-offset-6" style="margin:80px;">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">Add Train</h3></div>
+                <div class="panel-body">
+                    <div>
+                        <p class="help-block">Enter Train Name:</p>
+                        <input type="text" id="train_name">
+                    </div>
+                    <div>
+                        <p class="help-block">Destination </p>
+                        <input type="text" id="train_destination">
+                    </div>
+                    <div>
+                        <p class="help-block">First Train Time(HH:MM):</p>
+                        <input type="text" id="train_first">
+                    </div>
+                    <div>
+                        <p class="help-block">Frequency:</p>
+                        <input type="number" id="train_frequency">
+                    </div>
+                    <button id="submit-button" class="btn btn-default btn-primary" type="submit" style="margin:17px;">Submit </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/jquery.min.js"></script>
+    <script src="assets/bootstrap/js/bootstrap.min.js"></script>
+    <script src="assets/js/javascript-source.js"></script>
+
+
+  <script type="text/javascript">
+    var config = {
+    apiKey: "AIzaSyD-8fzq-sg6uogJX-W5U4CAPevsnrXG2rc",
+    authDomain: "traintimer-faf2e.firebaseapp.com",
+    databaseURL: "https://traintimer-faf2e.firebaseio.com",
+    projectId: "traintimer-faf2e",
+    storageBucket: "traintimer-faf2e.appspot.com",
+    messagingSenderId: "167501295119"
+  };
+  firebase.initializeApp(config);
+
+ console.log(firebase); //test connection
+
+//connect to firebase database
+var database = firebase.database();
+
+//moment.js 
+//current time update every second
+var timeStep = setInterval(currentTime, 1000);
+
+//current time
+function currentTime() {
+    var timeNow = moment().format("hh:mm:ss A");
+      $("#current-time").text(timeNow);
+      
+       //refresh page every minute
+          var secondsNow = moment().format("ss");
+            if(secondsNow == "00"){
+                refreshTable();
+            }
+}
+//current date
+function currentDate() {
+      var currentDay = moment('2017-08-11').format('LL');
+      $('#current-date').text(currentDay);
+}
+currentDate();
+
+$('#submit-button').on("click", function() {
+
+ //user input fields
+  var name = $("#train_name").val().trim();
+  var dest = $("#train_destination").val().trim();
+  var freq = $("#train_frequency").val().trim();
+  var starter = moment($("#train_first").val().trim(), "HH:mm").format("HH:mm");
+  
+ //scheduleTrain object contains data to be pushed into array
+  var scheduleTrain = {
+              locomoter: name,
+              destination: dest,
+              frequency: freq,
+              firstTrain: starter,
+          }
+        //push data to firebase
+        database.ref().push(scheduleTrain);
+        console.log(scheduleTrain.name);
+  
+         // clear text-boxes
+          $("#train_name").val("");
+          $("#train_destination").val("");
+          $("#train_first").val("");
+          $("#train_frequency").val("");
+          return false;
+});
+
+//test database:
+var ref = database.ref('scheduleTrain');
+ref.on('value', evalData);
+
+   function evalData(datastream, error) {
+      console.log(datastream + 'data received');
+      console.log(error + 'error');
+    }
+
+//create firebase event listner for adding trains to database and row in html where user entry appears
+database.ref().on("child_added", function(listen) {
+    
+ //store "listen" values within variables
+        var name = listen.val().locomoter;
+        var dest = listen.val().destination;
+        var freq = listen.val().frequency;
+        var starter = listen.val().firstTrain;
+
+         console.log(listen.val());
+          console.log(name  + " this is the var 'name'");
+          console.log(dest + " this is the var 'dest'");
+          console.log(freq + " this is the var 'freq'");
+          console.log(starter + " this is the var 'starter'");
+
+ //moment.js
+  //first train must arrive prior to current time:
+  var pre = moment(starter, " HH:mm");
+    console.log(pre + " returned value for var 'pre'");
+  var current = moment().format("HH:mm");
+    console.log("CURRENT TIME: " + current);
+  //diff = currentTime - fisrt train:
+    var diff = moment().diff(moment(pre), "minutes");
+  console.log(diff + " this is the var 'diff'");
+
+ //remain = remainder of the time left:
+  var remain = diff % freq;
+  console.log(remain + " this is the var 'remainder'");
+  //time until arrival:
+  var arrivalTime = freq - remain;
+  console.log(arrivalTime + " this is the var 'arrivalTime'");
+  //next train to arrive:
+  var nextTrain = moment().add(arrivalTime, "minutes").format("HH:mm");
+  console.log(nextTrain + " this is the var 'nextTrain'");
+
+ $("#train-table").append("<tr><td>" + name + "</td><td>" + dest + "</td><td>" + freq + "</td><td>" + nextTrain + "</td><td>" + arrivalTime + "</td></tr>");
+});
+  </script>
+   
+</body>
+
+</html>
